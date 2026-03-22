@@ -1,8 +1,8 @@
 # BTC 15-min Window Backtest
 
-A browser-based backtesting dashboard for the BTC UP/DOWN 15-min Polymarket strategy.
+This is a browser-based backtesting dashboard for the BTC UP/DOWN 15-min Polymarket strategy.
 
-Fetches real historical candles directly from Binance and runs your live bot's full indicator logic against them — no server, no install, no API keys.
+It fetches real historical candles directly from Binance and runs your live bot's full indicator logic against them.
 
 **Live:** [oxdonyosa.github.io/friendly-sniffle](https://oxdonyosa.github.io/friendly-sniffle/)
 
@@ -136,7 +136,7 @@ For the most accurate edge measurement, log real trades from the live bot and re
 
 ## Related
 
-- **Twitter** — [@don_yosa](https://x.com/don_yosa)
+- **Twitter** — Built by [@don_yosa](https://x.com/don_yosa)
 
 - **Live signal bot** — deploys on Railway, sends Telegram signals before each 15-min window
 - **Polymarket market slug pattern** — `btc-updown-15m-{unix_timestamp}`
