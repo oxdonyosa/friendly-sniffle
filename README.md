@@ -136,6 +136,8 @@ For the most accurate edge measurement, log real trades from the live bot and re
 
 ## Related
 
+- **Twitter** — [@don_yosa](https://x.com/don_yosa)
+
 - **Live signal bot** — deploys on Railway, sends Telegram signals before each 15-min window
 - **Polymarket market slug pattern** — `btc-updown-15m-{unix_timestamp}`
 - **Resolution source** — Chainlink BTC/USD on Ethereum mainnet
