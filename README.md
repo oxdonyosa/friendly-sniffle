@@ -1,8 +1,8 @@
 # BTC 15-min Window Backtest
 
-This is a browser-based backtesting dashboard for the BTC UP/DOWN 15-min Polymarket strategy.
+A browser-based backtesting dashboard for the BTC UP/DOWN 15-min Polymarket strategy.
 
-It fetches real historical candles directly from Binance and runs your live bot's full indicator logic against them.
+Fetches real historical candles directly from Binance and runs your live bot's full indicator logic against them — no server, no install, no API keys.
 
 **Live:** [oxdonyosa.github.io/friendly-sniffle](https://oxdonyosa.github.io/friendly-sniffle/)
 
@@ -126,9 +126,10 @@ A 1-year backtest fetches ~35,000 candles across ~35 requests and takes about 15
 
 - Chainlink spread check is skipped — not needed in backtesting since Binance is the data source and there is no Chainlink price to compare against
 - No slippage or fees modelled
-- VWAP resets daily at UTC midnight — close but not exact to a session-anchored VWAP
 
 **Resolution method:** uses `next candle open vs current candle open` — the closest available proxy to what Polymarket actually measures (Chainlink price at window close vs window open). More accurate than next-candle close.
+
+**VWAP:** anchored to 8:30 AM ET every day — the macro data drop and true institutional session start. Handles EDT/EST automatically. Each day's signals are measured against that session's VWAP, not overnight noise.
 
 For the most accurate edge measurement, log real trades from the live bot and replay those.
 
@@ -136,7 +137,7 @@ For the most accurate edge measurement, log real trades from the live bot and re
 
 ## Related
 
-- **Twitter** — Built by [@don_yosa](https://x.com/don_yosa)
+- **Twitter** — [@don_yosa](https://x.com/don_yosa)
 
 - **Live signal bot** — deploys on Railway, sends Telegram signals before each 15-min window
 - **Polymarket market slug pattern** — `btc-updown-15m-{unix_timestamp}`

@@ -390,15 +390,21 @@ function atrF(c){return ema(c.map((x,i)=>{if(!i)return x.high-x.low;const p=c[i-
 function macdH(cl){const ml=ema(cl,12).map((v,i)=>v-ema(cl,26)[i]);return ml.map((v,i)=>v-ema(ml,9)[i]);}
 function rsiF(cl){return cl.map((v,i)=>{if(i<8)return 50;let g=0,l=0;for(let j=i-8+1;j<=i;j++){const d=cl[j]-cl[j-1];d>0?g+=d:l+=Math.abs(d);}return 100-100/(1+(g/8)/((l/8)||1e-4));});}
 function vwapF(c){
-  // Reset VWAP at start of each UTC day (midnight)
+  // Reset VWAP at 8:30 AM ET each day (12:30 UTC in EDT / 13:30 UTC in EST)
+  // This is the macro data drop — the true institutional session anchor
   const result=[];
-  let cv=0,ct=0,lastDay=-1;
+  let cv=0,ct=0;
   c.forEach(x=>{
-    const day=new Date(x.time).getUTCDate();
-    if(day!==lastDay){cv=0;ct=0;lastDay=day;}
+    const d=new Date(x.time);
+    const utcH=d.getUTCHours(),utcM=d.getUTCMinutes();
+    // 8:30 AM ET = 12:30 UTC (EDT, Apr-Oct) or 13:30 UTC (EST, Nov-Mar)
+    const month=d.getUTCMonth()+1;
+    const isEDT=(month>3&&month<11);
+    const resetUTC=isEDT?12:13;
+    if(utcH===resetUTC&&utcM===30){cv=0;ct=0;}
     const tp=(x.high+x.low+x.close)/3;
     ct+=tp*x.volume;cv+=x.volume;
-    result.push(ct/cv);
+    result.push(cv>0?ct/cv:(x.high+x.low+x.close)/3);
   });
   return result;
 }
