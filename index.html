@@ -106,8 +106,18 @@ input[type=range]{width:100%;accent-color:#534AB7}
 .tpnl{font-weight:500;min-width:58px;text-align:right}
 .tbal{color:#888;min-width:62px;text-align:right}
 .note{font-size:11px;color:#aaa;text-align:center;margin-top:.75rem}
+
+.dir-btn{font-size:12px;padding:6px 14px;border-radius:20px;border:0.5px solid rgba(0,0,0,0.15);background:#f5f5f3;color:#555;cursor:pointer;font-family:inherit;transition:all .15s}
+.dir-btn:hover{border-color:#534AB7;color:#534AB7}
+.dir-btn.on{font-weight:500}
+#dir-both.on{background:#EEEDFE;border-color:#534AB7;color:#3C3489}
+#dir-up.on{background:#E1F5EE;border-color:#1D9E75;color:#085041}
+#dir-down.on{background:#FCEBEB;border-color:#E24B4A;color:#A32D2D}
+
 .divider{border:none;border-top:0.5px solid rgba(0,0,0,0.07);margin:.75rem 0}
-@media(prefers-color-scheme:dark){.divider{border-color:rgba(255,255,255,0.07)}}
+@media(prefers-color-scheme:dark){
+
+.divider{border-color:rgba(255,255,255,0.07)}}
 </style>
 </head>
 <body>
@@ -152,6 +162,14 @@ input[type=range]{width:100%;accent-color:#534AB7}
   <div class="sel-summary" id="sel-summary">1 window selected: 9:00 AM ET</div>
 
   <hr class="divider">
+  <div class="sec">Candle direction filter</div>
+  <div style="display:flex;gap:8px;margin-bottom:.6rem">
+    <button class="dir-btn on" id="dir-both" onclick="setDir('both',this)">Both</button>
+    <button class="dir-btn" id="dir-up" onclick="setDir('up',this)">UP only (green close)</button>
+    <button class="dir-btn" id="dir-down" onclick="setDir('down',this)">DOWN only (red close)</button>
+  </div>
+  <div style="font-size:11px;color:#888;margin-bottom:.25rem" id="dir-info">Testing all candles regardless of close direction</div>
+
   <div class="sec">Strategy parameters</div>
   <div class="row3">
     <div class="param"><label>Start balance <span id="v-bal">$100</span></label><input type="range" id="s-bal" min="10" max="1000" step="10" value="100"></div>
@@ -186,6 +204,18 @@ input[type=range]{width:100%;accent-color:#534AB7}
 
 <script>
 let eqChart, wChart;
+let candleDir = 'both';
+function setDir(d, btn) {
+  candleDir = d;
+  document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const info = document.getElementById('dir-info');
+  if (d === 'up') info.textContent = 'Only testing candles that closed GREEN (close > open)';
+  else if (d === 'down') info.textContent = 'Only testing candles that closed RED (close < open)';
+  else info.textContent = 'Testing all candles regardless of close direction';
+}
+
+
 const ET = -4;
 
 // ── Generate all 96 windows ───────────────────────────────────────────
@@ -355,7 +385,19 @@ function ema(a,p){const k=2/(p+1);let e=a[0];return a.map((v,i)=>{e=i===0?v:v*k+
 function atrF(c){return ema(c.map((x,i)=>{if(!i)return x.high-x.low;const p=c[i-1].close;return Math.max(x.high-x.low,Math.abs(x.high-p),Math.abs(x.low-p));}),14);}
 function macdH(cl){const ml=ema(cl,12).map((v,i)=>v-ema(cl,26)[i]);return ml.map((v,i)=>v-ema(ml,9)[i]);}
 function rsiF(cl){return cl.map((v,i)=>{if(i<8)return 50;let g=0,l=0;for(let j=i-8+1;j<=i;j++){const d=cl[j]-cl[j-1];d>0?g+=d:l+=Math.abs(d);}return 100-100/(1+(g/8)/((l/8)||1e-4));});}
-function vwapF(c){let cv=0,ct=0;return c.map(x=>{const tp=(x.high+x.low+x.close)/3;ct+=tp*x.volume;cv+=x.volume;return ct/cv;});}
+function vwapF(c){
+  // Reset VWAP at start of each UTC day (midnight)
+  const result=[];
+  let cv=0,ct=0,lastDay=-1;
+  c.forEach(x=>{
+    const day=new Date(x.time).getUTCDate();
+    if(day!==lastDay){cv=0;ct=0;lastDay=day;}
+    const tp=(x.high+x.low+x.close)/3;
+    ct+=tp*x.volume;cv+=x.volume;
+    result.push(ct/cv);
+  });
+  return result;
+}
 
 function runSigs(candles, sT, nT, mF) {
   const cl=candles.map(c=>c.close),aA=atrF(candles),e9=ema(cl,9),e21=ema(cl,21),hist=macdH(cl),rA=rsiF(cl),vA=vwapF(candles);
@@ -363,6 +405,9 @@ function runSigs(candles, sT, nT, mF) {
   const out=[];
   for(let i=28;i<candles.length-1;i++){
     if(!inWin(candles[i]))continue;
+    const isGreen=candles[i].close>=candles[i].open;
+    if(candleDir==='up'&&!isGreen)continue;
+    if(candleDir==='down'&&isGreen)continue;
     const c=candles[i];
     const aAvg=aA.slice(i-20,i).reduce((a,b)=>a+b,0)/20;
     const vd=(c.close-vA[i])/vA[i],gap=e9[i]-e21[i],hC=hist[i],hP=hist[i-1];
@@ -383,7 +428,7 @@ function runSigs(candles, sT, nT, mF) {
     else if(edge>=nT&&passed>=mF)tier='NORMAL';
     if(!tier)continue;
     const nx=candles[i+1];
-    out.push({tier,dir,edge,passed,won:dir===(nx.close>=nx.open?'UP':'DOWN'),candle:c,winLabel:winLbl(c),time:new Date(c.time)});
+    out.push({tier,dir,edge,passed,won:dir===(nx.open>=c.open?'UP':'DOWN'),candle:c,winLabel:winLbl(c),time:new Date(c.time)});
   }
   return out;
 }
